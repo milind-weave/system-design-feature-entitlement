@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Acme Cloud – Feature Visibility Mock</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --card: #fff; --border: #e2e5ea; --text: #1f2933; --muted: #6b7684;
+    --primary: #3b5bdb; --primary-dark: #2f49b3; --green: #2b8a3e; --amber: #e67700; --red: #c92a2a;
+    --green-bg: #ebfbee; --amber-bg: #fff4e6; --blue-bg: #edf2ff; --red-bg: #fff5f5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+  button { font: inherit; cursor: pointer; }
+  .layout { display: grid; grid-template-columns: 300px 1fr; min-height: 100vh; }
+
+  /* Control panel (NOT part of the product; simulates the environment) */
+  .sim { background: #1b1f27; color: #d6dbe4; padding: 16px; overflow-y: auto; }
+  .sim h2 { margin: 0 0 4px; font-size: 14px; color: #fff; }
+  .sim .hint { font-size: 12px; color: #8b95a5; margin-bottom: 14px; }
+  .sim h3 { margin: 18px 0 8px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #8b95a5; }
+  .sim select, .sim button { width: 100%; padding: 7px 8px; border-radius: 6px; border: 1px solid #39414f; background: #272d38; color: #e8ecf2; margin-bottom: 6px; text-align: left; }
+  .sim button:hover { background: #313948; }
+  .sim label.row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; }
+  .sim .loc { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid #272d38; font-size: 12.5px; }
+  .sim .loc .tag { margin-left: auto; font-size: 10.5px; padding: 1px 6px; border-radius: 10px; background: #2f3745; color: #b8c1d0; white-space: nowrap; }
+  .sim .stale { background: #5c3b00; color: #ffd8a8; padding: 6px 8px; border-radius: 6px; font-size: 12px; margin-bottom: 6px; display: none; }
+
+  /* Product shell */
+  .app { display: flex; flex-direction: column; min-width: 0; }
+  .topbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 10px 20px; display: flex; align-items: center; gap: 16px; }
+  .logo { font-weight: 700; color: var(--primary); }
+  .tabs { display: flex; gap: 4px; margin-left: 12px; }
+  .tab { background: none; border: 0; padding: 8px 12px; border-radius: 6px; color: var(--muted); }
+  .tab.active { background: var(--blue-bg); color: var(--primary); font-weight: 600; }
+  .scope { margin-left: auto; color: var(--muted); font-size: 13px; }
+  .content { padding: 24px; max-width: 980px; width: 100%; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  .sub { color: var(--muted); margin-bottom: 18px; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 16px; }
+  .btn { padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border); background: #fff; color: var(--text); }
+  .btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .btn.primary:hover { background: var(--primary-dark); }
+  .btn.link { border: 0; background: none; color: var(--primary); padding: 8px 4px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .banner { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 8px; margin-bottom: 16px; border: 1px solid; }
+  .banner.info { background: var(--blue-bg); border-color: #bac8ff; }
+  .banner.warn { background: var(--amber-bg); border-color: #ffd8a8; }
+  .banner.danger { background: var(--red-bg); border-color: #ffc9c9; }
+  .banner .grow { flex: 1; }
+
+  .promo { text-align: center; padding: 48px 24px; }
+  .promo .icon { font-size: 40px; }
+  .promo h2 { margin: 8px 0; }
+  .promo p { color: var(--muted); max-width: 520px; margin: 0 auto 20px; }
+  .promo .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .note { margin-top: 14px; font-size: 12.5px; color: var(--muted); }
+
+  .teaser { display: flex; gap: 18px; align-items: center; background: linear-gradient(135deg, #edf2ff, #f3f0ff); border: 1px solid #d0bfff; }
+  .teaser .emoji { font-size: 38px; }
+  .teaser .grow { flex: 1; }
+  .teaser h3 { margin: 0 0 4px; }
+  .teaser p { margin: 0 0 10px; color: var(--muted); }
+  .teaser .actions { display: flex; gap: 8px; position: relative; }
+  .menu { position: absolute; top: 40px; left: 150px; background: #fff; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.12); display: none; z-index: 5; }
+  .menu button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 9px 14px; }
+  .menu button:hover { background: var(--bg); }
+
+  .chart { display: flex; align-items: flex-end; gap: 8px; height: 140px; padding-top: 10px; }
+  .chart div { flex: 1; background: linear-gradient(var(--primary), #91a7ff); border-radius: 4px 4px 0 0; }
+  .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+  .kpi b { font-size: 22px; display: block; }
+  .skeleton { background: linear-gradient(90deg, #e9ecef 25%, #f4f5f7 50%, #e9ecef 75%); background-size: 200% 100%; animation: sh 1.2s infinite; border-radius: 8px; }
+  @keyframes sh { to { background-position: -200% 0; } }
+
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: none; align-items: center; justify-content: center; z-index: 20; }
+  .modal { background: #fff; border-radius: 12px; padding: 22px; width: 460px; max-width: 92vw; }
+  .modal h3 { margin-top: 0; }
+  .modal ul { padding-left: 18px; color: var(--muted); }
+  .modal .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+  .toast { position: fixed; bottom: 20px; right: 20px; background: #1b1f27; color: #fff; padding: 10px 14px; border-radius: 8px; display: none; z-index: 30; }
+  .pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--blue-bg); color: var(--primary); }
+  .empty { color: var(--muted); border: 1px dashed var(--border); border-radius: 10px; padding: 28px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ============ SIMULATOR (interviewer / candidate controls, not product UI) ============ -->
+  <aside class="sim">
+    <h2>Scenario simulator</h2>
+    <div class="hint">Not part of the product. Use it to flip the world and watch how the product UI should behave.</div>
+
+    <h3>Preset scenario</h3>
+    <select id="preset"></select>
+
+    <h3>Current user</h3>
+    <select id="role">
+      <option value="admin">Admin – can manage subscriptions</option>
+      <option value="member">Member – cannot manage subscriptions</option>
+    </select>
+
+    <h3>Flags &amp; network</h3>
+    <label class="row"><input type="checkbox" id="flag" checked /> Feature flag "insights-v2" enabled</label>
+    <label class="row"><input type="checkbox" id="loading" /> Simulate slow network (loading)</label>
+
+    <h3>Selected locations (scope)</h3>
+    <div id="locList"></div>
+
+    <h3>Things that happen in the real world</h3>
+    <div class="stale" id="stale">Your client data is out of date. The server changed.</div>
+    <button id="advance">⏩ Advance server clock by 1 day</button>
+    <button id="otherTab">🪟 Admin upgrades Location 1 in another tab</button>
+    <button id="refetch">🔄 Refetch from server</button>
+    <button id="resetTeaser">♻️ Reset teaser dismissal</button>
+  </aside>
+
+  <!-- ============ PRODUCT UI ============ -->
+  <main class="app">
+    <div class="topbar">
+      <span class="logo">☁️ Acme Cloud</span>
+      <nav class="tabs">
+        <button class="tab active" data-tab="dashboard">Dashboard</button>
+        <button class="tab" data-tab="insights" id="insightsTab">Insights</button>
+        <button class="tab" data-tab="inbox">Inbox</button>
+      </nav>
+      <span class="scope" id="scopeLabel"></span>
+    </div>
+    <div class="content" id="view"></div>
+  </main>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modal"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------- Mock world ---------------- */
+// Per-location backend truth. state: active | trial | trial_eligible | purchasable | unavailable
+const L = (id, name, state, days) => ({ id, name, state, trialDaysLeft: days || 0 });
+const PRESETS = {
+  'All locations active': { role: 'admin', flag: true, sel: [1,2,3,4], data: [L(1,'Downtown','active'),L(2,'Uptown','active'),L(3,'Riverside','active'),L(4,'Lakeside','active'),L(5,'Airport','purchasable'),L(6,'Harbor','unavailable')] },
+  'Partially active (2 of 4)': { role: 'admin', flag: true, sel: [1,2,3,4], data: [L(1,'Downtown','active'),L(2,'Uptown','active'),L(3,'Riverside','trial_eligible'),L(4,'Lakeside','purchasable'),L(5,'Airport','purchasable'),L(6,'Harbor','unavailable')] },
+  'None active, trial available': { role: 'admin', flag: true, sel: [1,2,3], data: [L(1,'Downtown','trial_eligible'),L(2,'Uptown','trial_eligible'),L(3,'Riverside','purchasable'),L(4,'Lakeside','purchasable'),L(5,'Airport','purchasable'),L(6,'Harbor','unavailable')] },
+  'Trial running (mixed days left)': { role: 'admin', flag: true, sel: [1,2,3], data: [L(1,'Downtown','trial',21),L(2,'Uptown','trial',9),L(3,'Riverside','active'),L(4,'Lakeside','purchasable'),L(5,'Airport','purchasable'),L(6,'Harbor','unavailable')] },
+  'Trial about to expire (1 day)': { role: 'admin', flag: true, sel: [1,2], data: [L(1,'Downtown','trial',1),L(2,'Uptown','trial',1),L(3,'Riverside','purchasable'),L(4,'Lakeside','purchasable'),L(5,'Airport','purchasable'),L(6,'Harbor','unavailable')] },
+  'None active, purchase only': { role: 'admin', flag: true, sel: [3,4,5], data: [L(1,'Downtown','active'),L(2,'Uptown','active'),L(3,'Riverside','purchasable'),L(4,'Lakeside','purchasable'),L(5,'Airport','purchasable'),L(6,'Harbor','unavailable')] },
+  'Member without permission': { role: 'member', flag: true, sel: [1,2,3], data: [L(1,'Downtown','trial_eligible'),L(2,'Uptown','trial_eligible'),L(3,'Riverside','purchasable'),L(4,'Lakeside','purchasable'),L(5,'Airport','purchasable'),L(6,'Harbor','unavailable')] },
+  'Active but flag turned off': { role: 'admin', flag: false, sel: [1,2,3,4], data: [L(1,'Downtown','active'),L(2,'Uptown','active'),L(3,'Riverside','active'),L(4,'Lakeside','active'),L(5,'Airport','purchasable'),L(6,'Harbor','unavailable')] },
+  'Feature unavailable for scope': { role: 'admin', flag: true, sel: [6], data: [L(1,'Downtown','active'),L(2,'Uptown','active'),L(3,'Riverside','active'),L(4,'Lakeside','active'),L(5,'Airport','purchasable'),L(6,'Harbor','unavailable')] },
+};
+
+const clone = (x) => JSON.parse(JSON.stringify(x));
+const S = {
+  tab: 'dashboard',
+  role: 'admin',
+  flag: true,
+  loading: false,
+  selected: [],
+  server: [],
+  client: [],
+  teaser: { dismissedUntilDay: null, never: false },
+  day: 0,
+  menuOpen: false,
+};
+
+/* ---------------- Fake backend ---------------- */
+const api = {
+  fetch: () => clone(S.server),
+  startTrial(ids) {
+    ids.forEach(id => { const l = S.server.find(x => x.id === id); if (l && l.state === 'trial_eligible') { l.state = 'trial'; l.trialDaysLeft = 30; } });
+  },
+  subscribe(ids) {
+    ids.forEach(id => { const l = S.server.find(x => x.id === id); if (l && ['purchasable','trial_eligible','trial'].includes(l.state)) { l.state = 'active'; l.trialDaysLeft = 0; } });
+  },
+  tick() {
+    S.day += 1;
+    S.server.forEach(l => { if (l.state === 'trial') { l.trialDaysLeft -= 1; if (l.trialDaysLeft <= 0) { l.state = 'purchasable'; l.trialDaysLeft = 0; } } });
+  },
+};
+
+/* ---------------- Helpers ---------------- */
+const $ = (s) => document.querySelector(s);
+const sel = () => S.client.filter(l => S.selected.includes(l.id));
+const isStale = () => JSON.stringify(S.client) !== JSON.stringify(S.server);
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 2400); }
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+
+/* ---------------- Rendering: simulator ---------------- */
+function renderSim() {
+  const p = $('#preset'); if (!p.options.length) Object.keys(PRESETS).forEach(k => p.add(new Option(k, k)));
+  $('#role').value = S.role; $('#flag').checked = S.flag; $('#loading').checked = S.loading;
+  $('#locList').innerHTML = S.client.map(l => `
+    <label class="loc">
+      <input type="checkbox" data-loc="${l.id}" ${S.selected.includes(l.id) ? 'checked' : ''} />
+      ${l.name}
+      <span class="tag">${l.state}${l.state === 'trial' ? ` · ${l.trialDaysLeft}d` : ''}</span>
+    </label>`).join('');
+  $('#stale').style.display = isStale() ? 'block' : 'none';
+}
+
+/* ---------------- Rendering: product ---------------- */
+function render() {
+  renderSim();
+  $('#scopeLabel').textContent = `📍 ${plural(S.selected.length, 'location')} selected`;
+  // Nav item for the feature is hidden when the flag is off
+  $('#insightsTab').style.display = S.flag ? '' : 'none';
+  if (!S.flag && S.tab === 'insights') S.tab = 'dashboard';
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === S.tab));
+  const v = $('#view');
+  if (S.tab === 'dashboard') v.innerHTML = dashboardView();
+  else if (S.tab === 'insights') v.innerHTML = insightsView();
+  else v.innerHTML = `<h1>Inbox</h1><div class="sub">Unrelated page. No entitlement logic here.</div><div class="empty">Nothing to see – other products live here.</div>`;
+}
+
+function dashboardView() {
+  const locs = sel();
+  const anyActive = locs.some(l => l.state === 'active' || l.state === 'trial');
+  const trialEligible = locs.some(l => l.state === 'trial_eligible');
+  const canManage = S.role === 'admin';
+  const dismissed = S.teaser.never || (S.teaser.dismissedUntilDay !== null && S.day < S.teaser.dismissedUntilDay);
+  const showTeaser = !S.loading && S.flag && canManage && !anyActive && trialEligible && !dismissed;
+
+  const teaser = showTeaser ? `
+    <div class="card teaser">
+      <div class="emoji">📈</div>
+      <div class="grow">
+        <h3>Unlock Insights free for 30 days</h3>
+        <p>Spot trends across your locations. No card required · No auto-subscription.</p>
+        <div class="actions">
+          <button class="btn primary" data-act="startTrial">Start free trial</button>
+          <button class="btn" data-act="demo">See it in action</button>
+          <button class="btn link" data-act="menu">Maybe later ▾</button>
+          <div class="menu" id="menu" style="display:${S.menuOpen ? 'block' : 'none'}">
+            <button data-act="remind">Remind me in 14 days</button>
+            <button data-act="never">Never show again</button>
+          </div>
+        </div>
+      </div>
+    </div>` : '';
+
+  return `
+    <h1>Dashboard</h1><div class="sub">Overview for your selected locations</div>
+    ${teaser}
+    <div class="kpis">
+      <div class="kpi"><span class="sub">Appointments today</span><b>128</b></div>
+      <div class="kpi"><span class="sub">Missed calls</span><b>14</b></div>
+      <div class="kpi"><span class="sub">New patients</span><b>9</b></div>
+    </div>
+    <div class="card"><b>Other dashboard widgets</b><div class="note">The teaser above is one surface of the entitlement system. It is shown only when it makes sense, and it can be dismissed.</div></div>`;
+}
+
+function insightsView() {
+  if (S.loading) return `<h1>Insights</h1><div class="sub">&nbsp;</div><div class="skeleton" style="height:60px;margin-bottom:12px"></div><div class="skeleton" style="height:240px"></div>`;
+  const locs = sel();
+  const canManage = S.role === 'admin';
+  const activeLocs = locs.filter(l => l.state === 'active' || l.state === 'trial');
+  const trialLocs = locs.filter(l => l.state === 'trial');
+  const inactive = locs.filter(l => !(l.state === 'active' || l.state === 'trial'));
+  const trialEligible = locs.filter(l => l.state === 'trial_eligible');
+  const purchasable = locs.filter(l => l.state === 'purchasable' || l.state === 'trial_eligible');
+  const head = `<h1>Insights <span class="pill">${plural(locs.length, 'location')}</span></h1><div class="sub">Trends and reports for your selected locations</div>`;
+
+  if (!locs.length) return head + `<div class="empty">Select at least one location.</div>`;
+
+  // Nothing active anywhere
+  if (!activeLocs.length) {
+    if (inactive.every(l => l.state === 'unavailable')) {
+      return head + `<div class="empty">Insights isn't available for the selected location${locs.length > 1 ? 's' : ''}.</div>`;
+    }
+    const canTrial = trialEligible.length > 0;
+    const primary = canTrial
+      ? `<button class="btn primary" data-act="startTrial" ${canManage ? '' : 'disabled'}>Start 30-day free trial</button>`
+      : `<button class="btn primary" data-act="upgrade" ${canManage ? '' : 'disabled'}>Upgrade to unlock</button>`;
+    return head + `
+      <div class="card promo">
+        <div class="icon">🔒</div>
+        <h2>Insights is not active for your locations</h2>
+        <p>See trends, compare locations, and export reports.</p>
+        <div class="actions">${primary}<button class="btn" data-act="demo">See it in action</button></div>
+        ${canManage ? '' : '<div class="note">Only admins can start a trial or upgrade. Ask your account admin.</div>'}
+      </div>`;
+  }
+
+  // Active somewhere
+  let banners = '';
+  if (trialLocs.length) {
+    const min = Math.min(...trialLocs.map(l => l.trialDaysLeft));
+    const urgent = min <= 3;
+    banners += `<div class="banner ${urgent ? 'danger' : 'info'}">
+      <div class="grow"><b>${plural(min, 'day')} left in your free trial</b>
+      ${trialLocs.length > 1 ? ` (earliest of ${trialLocs.length} locations)` : ''}</div>
+      <button class="btn primary" data-act="upgrade" ${canManage ? '' : 'disabled'}>Upgrade now</button></div>`;
+  }
+  const missing = inactive.filter(l => l.state !== 'unavailable');
+  if (missing.length) {
+    banners += `<div class="banner warn">
+      <div class="grow"><b>Insights isn't active in ${missing.length} of ${locs.length} selected locations.</b>
+      Data below only covers: ${activeLocs.map(l => l.name).join(', ')}.</div>
+      ${canManage ? '<button class="btn primary" data-act="upgrade">Add to remaining locations</button>' : '<span class="note">Ask an admin to enable it.</span>'}</div>`;
+  }
+  return head + banners + `
+    <div class="card"><b>Weekly trend</b>
+      <div class="chart">${[40,65,52,80,70,95,60].map(h => `<div style="height:${h}%"></div>`).join('')}</div>
+    </div>
+    <div class="card"><b>Top insights</b><div class="note">Calls spike on Mondays · Missed-call rate down 12% · Riverside leads in bookings.</div></div>`;
+}
+
+/* ---------------- Modals ---------------- */
+function openModal(html) { $('#modal').innerHTML = html; $('#modalBg').style.display = 'flex'; }
+function closeModal() { $('#modalBg').style.display = 'none'; }
+function upgradeModal() {
+  const ids = sel().filter(l => ['purchasable','trial_eligible','trial'].includes(l.state)).map(l => l.id);
+  openModal(`<h3>Upgrade to Insights</h3>
+    <p>This will add Insights to <b>${plural(ids.length, 'location')}</b>.</p>
+    <ul><li>Unlimited reports</li><li>Cross-location comparison</li><li>Billed on your next invoice</li></ul>
+    <div class="actions"><button class="btn" data-act="closeModal">Cancel</button>
+    <button class="btn primary" data-act="confirmUpgrade" data-ids="${ids.join(',')}">Confirm upgrade</button></div>`);
+}
+
+/* ---------------- Events ---------------- */
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('[data-act]'); if (!a) { if (S.menuOpen) { S.menuOpen = false; render(); } return; }
+  const act = a.dataset.act;
+  if (act === 'menu') { S.menuOpen = !S.menuOpen; e.stopPropagation(); render(); return; }
+  if (act === 'startTrial') {
+    const ids = sel().filter(l => l.state === 'trial_eligible').map(l => l.id);
+    api.startTrial(ids); S.client = api.fetch(); toast(`Trial started for ${plural(ids.length, 'location')}`);
+    if (S.tab === 'dashboard') S.tab = 'insights';
+  }
+  if (act === 'demo') openModal(`<h3>Demo</h3><p>(Placeholder for an interactive product demo.)</p><div class="actions"><button class="btn primary" data-act="closeModal">Close</button></div>`);
+  if (act === 'remind') { S.teaser.dismissedUntilDay = S.day + 14; S.menuOpen = false; toast('We will remind you in 14 days'); }
+  if (act === 'never') { S.teaser.never = true; S.menuOpen = false; toast('Teaser hidden'); }
+  if (act === 'upgrade') { upgradeModal(); return; }
+  if (act === 'closeModal') closeModal();
+  if (act === 'confirmUpgrade') {
+    const ids = a.dataset.ids.split(',').filter(Boolean).map(Number);
+    closeModal(); api.subscribe(ids); S.client = api.fetch(); toast('Upgrade successful');
+  }
+  render();
+});
+
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => { S.tab = t.dataset.tab; render(); }));
+$('#preset').addEventListener('change', (e) => loadPreset(e.target.value));
+$('#role').addEventListener('change', (e) => { S.role = e.target.value; render(); });
+$('#flag').addEventListener('change', (e) => { S.flag = e.target.checked; render(); });
+$('#loading').addEventListener('change', (e) => { S.loading = e.target.checked; render(); });
+$('#locList').addEventListener('change', (e) => {
+  const id = Number(e.target.dataset.loc);
+  S.selected = e.target.checked ? [...S.selected, id] : S.selected.filter(x => x !== id);
+  render();
+});
+$('#advance').addEventListener('click', () => { api.tick(); toast('Server clock +1 day (client not refreshed)'); render(); });
+$('#otherTab').addEventListener('click', () => { api.subscribe([1]); toast('Server changed in another tab'); render(); });
+$('#refetch').addEventListener('click', () => { S.client = api.fetch(); toast('Refetched'); render(); });
+$('#resetTeaser').addEventListener('click', () => { S.teaser = { dismissedUntilDay: null, never: false }; render(); });
+
+function loadPreset(name) {
+  const p = PRESETS[name];
+  S.role = p.role; S.flag = p.flag; S.selected = [...p.sel];
+  S.server = clone(p.data); S.client = clone(p.data);
+  S.teaser = { dismissedUntilDay: null, never: false }; S.day = 0; S.tab = 'dashboard';
+  render();
+}
+loadPreset('Partially active (2 of 4)');
+$('#preset').value = 'Partially active (2 of 4)';
+</script>
+</body>
+</html>
